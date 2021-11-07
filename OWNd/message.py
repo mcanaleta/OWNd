@@ -30,6 +30,12 @@ CLIMATE_MODE_OFF = "off"
 CLIMATE_MODE_HEAT = "heat"
 CLIMATE_MODE_COOL = "cool"
 CLIMATE_MODE_AUTO = "auto"
+CLIMATE_MODES = {
+    0: CLIMATE_MODE_OFF,
+    1: CLIMATE_MODE_HEAT,
+    2: CLIMATE_MODE_COOL,
+    3: CLIMATE_MODE_AUTO
+}
 
 PIR_SENSITIVITY_MAPPING = ["low", "medium", "high", "very high"]
 
@@ -866,6 +872,12 @@ class OWNHeatingEvent(OWNEvent):
                     self._fan_on = False
                     self._is_active = False
                     self._human_readable_log = f"Zone {self._zone}'s fan is off."
+
+        elif self._dimension == 22: #AC Unit setting as captured from MyHome Screen 10
+            self._mode_name = CLIMATE_MODES[int(self._dimension_value[0])]
+            self._set_temperature = float(self._dimension_value[1])/10
+            self._fan_speed = int(self._dimension_value[2])
+            self._human_readable_log = f"AC Unit {'-'.join([self._where, *self._where_param])} set to mode {self._mode_name}, target temperature: {self._set_temperature}, fan speed: {self._fan_speed}"
 
         elif self._dimension == 60:  # Humidity
             self._type = MESSAGE_TYPE_MAIN_HUMIDITY
