@@ -4,6 +4,7 @@
 import argparse
 import asyncio
 import logging
+import os
 
 from .connection import OWNEventSession, OWNGateway
 
@@ -14,17 +15,17 @@ async def main(arguments: dict, connection: OWNEventSession) -> None:
     address = (
         arguments["address"]
         if "address" in arguments and isinstance(arguments["address"], str)
-        else None
+        else os.getenv("MYHOMESERVER1_ADDRESS")
     )
     port = (
         arguments["port"]
         if "port" in arguments and isinstance(arguments["port"], int)
-        else None
+        else os.getenv("MYHOMESERVER1_PORT")
     )
     password = (
         arguments["password"]
         if "password" in arguments and isinstance(arguments["password"], str)
-        else None
+        else os.getenv("MYHOMESERVER1_PASSWORD")
     )
     serial_number = (
         arguments["serialNumber"]

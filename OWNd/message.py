@@ -4,6 +4,7 @@ import datetime
 import re
 from dateutil.relativedelta import relativedelta
 import pytz
+from enum import Enum
 
 MESSAGE_TYPE_ACTIVE_POWER = "active_power"
 MESSAGE_TYPE_ENERGY_TOTALIZER = "energy_totalizer"
@@ -30,12 +31,12 @@ CLIMATE_MODE_OFF = "off"
 CLIMATE_MODE_HEAT = "heat"
 CLIMATE_MODE_COOL = "cool"
 CLIMATE_MODE_AUTO = "auto"
-CLIMATE_MODES = {
-    0: CLIMATE_MODE_OFF,
-    1: CLIMATE_MODE_HEAT,
-    2: CLIMATE_MODE_COOL,
-    3: CLIMATE_MODE_AUTO
-}
+
+class ClimateMode(Enum):
+    OFF = 0
+    HEAT = 1
+    COOL = 2
+    AUTO = 3
 
 PIR_SENSITIVITY_MAPPING = ["low", "medium", "high", "very high"]
 
@@ -56,13 +57,13 @@ class OWNMessage:
         r"^\*#(?P<who>\d+)\*(?P<where>#?\d+)(?P<where_param>(?:#\d+)*)##$"
     )  #  *#WHO*WHERE
     _DIMENSION_WRITING = re.compile(
-        r"^\*#(?P<who>\d+)\*(?P<where>#?\d+)?(?P<where_param>(?:#\d+)*)?\*#(?P<dimension>\d+)(?P<dimension_param>(?:#\d+)*)?(?P<dimension_value>(?:\*\d+)+)##$"  # pylint: disable=line-too-long
+        r"^\*#(?P<who>\d+)\*(?P<where>#?\d+)?(?P<where_param>(?:#\d+)*)?\*#(?P<dimension>\d+)(?P<dimension_param>(?:#\d+)*)?(?P<dimension_value>(?:\*\d*)+)##$"  # pylint: disable=line-too-long
     )  #  *#WHO*WHERE*#DIMENSION*VAL1*VALn##
     _DIMENSION_REQUEST = re.compile(
         r"^\*#(?P<who>\d+)\*(?P<where>#?\d+)?(?P<where_param>(?:#\d+)*)?\*(?P<dimension>\d+)##$"
     )  #  *#WHO*WHERE*DIMENSION##
     _DIMENSION_REQUEST_REPLY = re.compile(
-        r"^\*#(?P<who>\d+)\*(?P<where>#?\d+)?(?P<where_param>(?:#\d+)*)?\*(?P<dimension>\d+)(?P<dimension_param>(?:#\d+)*)?(?P<dimension_value>(?:\*\d+)+)##$"  # pylint: disable=line-too-long
+        r"^\*#(?P<who>\d+)\*(?P<where>#?\d+)?(?P<where_param>(?:#\d+)*)?\*(?P<dimension>\d+)(?P<dimension_param>(?:#\d+)*)?(?P<dimension_value>(?:\*\d*)+)##$"  # pylint: disable=line-too-long
     )  #  *#WHO*WHERE*DIMENSION*VAL1*VALn##
 
     """ Base class for all OWN messages """
@@ -177,6 +178,7 @@ class OWNMessage:
         ):
             return OWNCommand.parse(data)
         else:
+            print("OWNd couldn't parse: " + data)
             return None
 
     @property
@@ -874,9 +876,10 @@ class OWNHeatingEvent(OWNEvent):
                     self._human_readable_log = f"Zone {self._zone}'s fan is off."
 
         elif self._dimension == 22: #AC Unit setting as captured from MyHome Screen 10
-            self._mode_name = CLIMATE_MODES[int(self._dimension_value[0])]
-            self._set_temperature = float(self._dimension_value[1])/10
-            self._fan_speed = int(self._dimension_value[2])
+            self._mode_name = ClimateMode(int(self._dimension_value[0])).name.lower()
+            if self._dimension_value[1] != "":
+                self._set_temperature = float(self._dimension_value[1])/10
+                self._fan_speed = int(self._dimension_value[2])
             self._human_readable_log = f"AC Unit {'-'.join([self._where, *self._where_param])} set to mode {self._mode_name}, target temperature: {self._set_temperature}, fan speed: {self._fan_speed}"
 
         elif self._dimension == 60:  # Humidity
@@ -1797,6 +1800,14 @@ class OWNHeatingCommand(OWNCommand):
 
         message = cls(f"*4*{mode}*{zone}##")
         message._human_readable_log = f"Setting {zone_name} mode to '{mode_name}'."
+        return message
+
+    @classmethod
+    def set_ac_unit(cls, za: int, zb: int, n: int, mode: ClimateMode, temperature: float = 0, fan_speed: int = 0):
+        if mode != ClimateMode.OFF:
+            message = cls(f"*#4*3#{za}{zb}#{n}*#22*{mode.value}*{int(temperature*10):04d}*{fan_speed}*15##")
+        else:
+            message = cls(f"*#4*3#{za}{zb}#{n}*#22*{mode.value}**15*15##")
         return message
 
     @classmethod
