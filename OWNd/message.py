@@ -32,11 +32,8 @@ CLIMATE_MODE_HEAT = "heat"
 CLIMATE_MODE_COOL = "cool"
 CLIMATE_MODE_AUTO = "auto"
 
-class ClimateMode(Enum):
-    OFF = 0
-    HEAT = 1
-    COOL = 2
-    AUTO = 3
+CLIMATE_MODE_NUM_TO_NAME = {"0": CLIMATE_MODE_OFF, "1": CLIMATE_MODE_HEAT, "2": CLIMATE_MODE_COOL, "3": CLIMATE_MODE_AUTO}
+CLIMATE_MODE_NAME_TO_NUM = {v: k for k, v in CLIMATE_MODE_NUM_TO_NAME.items()}
 
 PIR_SENSITIVITY_MAPPING = ["low", "medium", "high", "very high"]
 
@@ -876,7 +873,7 @@ class OWNHeatingEvent(OWNEvent):
                     self._human_readable_log = f"Zone {self._zone}'s fan is off."
 
         elif self._dimension == 22: #AC Unit setting as captured from MyHome Screen 10
-            self._mode_name = ClimateMode(int(self._dimension_value[0])).name.lower()
+            self._mode_name = CLIMATE_MODE_NUM_TO_NAME[self._dimension_value[0]].lower()
             if self._dimension_value[1] != "":
                 self._set_temperature = float(self._dimension_value[1])/10
                 self._fan_speed = int(self._dimension_value[2])
@@ -1803,11 +1800,12 @@ class OWNHeatingCommand(OWNCommand):
         return message
 
     @classmethod
-    def set_ac_unit(cls, za: int, zb: int, n: int, mode: ClimateMode, temperature: float = 0, fan_speed: int = 0):
-        if mode != ClimateMode.OFF:
-            message = cls(f"*#4*3#{za}{zb}#{n}*#22*{mode.value}*{int(temperature*10):04d}*{fan_speed}*15##")
+    def set_ac_unit(cls, za: int, zb: int, n: int, mode: str, temperature: float = 0, fan_speed: int = 0):
+        modenum = CLIMATE_MODE_NAME_TO_NUM[mode]
+        if mode == CLIMATE_MODE_OFF:
+            message = cls(f"*#4*3#{za}{zb}#{n}*#22*{modenum}**15*15##")
         else:
-            message = cls(f"*#4*3#{za}{zb}#{n}*#22*{mode.value}**15*15##")
+            message = cls(f"*#4*3#{za}{zb}#{n}*#22*{modenum}*{int(temperature*10):04d}*{fan_speed}*15##")
         return message
 
     @classmethod

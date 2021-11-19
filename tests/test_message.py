@@ -1,5 +1,5 @@
 from re import A
-from OWNd.message import CLIMATE_MODE_COOL, CLIMATE_MODE_HEAT, CLIMATE_MODE_OFF, ClimateMode, OWNEvent, OWNHeatingCommand, OWNLightingEvent, OWNMessage
+from OWNd.message import CLIMATE_MODE_COOL, CLIMATE_MODE_NAME_TO_NUM, CLIMATE_MODE_NUM_TO_NAME, CLIMATE_MODE_OFF, OWNEvent, OWNHeatingCommand, OWNLightingEvent, OWNMessage
 
 
 def test_lighting_event():
@@ -24,13 +24,17 @@ def test_heating_ac_unit_off_event():
     assert msg._mode_name == CLIMATE_MODE_OFF
 
 def test_heating_ac_unit_set_command():
-    msg = OWNHeatingCommand.set_ac_unit(7,5,8, ClimateMode.COOL, 23, 0)
+    msg = OWNHeatingCommand.set_ac_unit(7,5,8, CLIMATE_MODE_COOL, 23, 0)
     assert msg._raw == "*#4*3#75#8*#22*2*0230*0*15##"
     msg = OWNMessage.parse(msg._raw)
     assert type(msg) is OWNHeatingCommand
 
-def test_heading_ac_off_command():
-    msg = OWNHeatingCommand.set_ac_unit(7,7,8, ClimateMode.OFF)
+def test_heating_ac_off_command():
+    msg = OWNHeatingCommand.set_ac_unit(7,7,8, CLIMATE_MODE_OFF)
     assert msg._raw == "*#4*3#77#8*#22*0**15*15##"
     msg = OWNMessage.parse(msg._raw)
     assert type(msg) is OWNHeatingCommand
+
+def test_climate_mode():
+    assert CLIMATE_MODE_NUM_TO_NAME["0"] == "off"
+    assert CLIMATE_MODE_NAME_TO_NUM["off"]  == "0"
