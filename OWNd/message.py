@@ -853,7 +853,7 @@ class OWNHeatingEvent(OWNEvent):
                 self._human_readable_log = (
                     f"Zone {self._zone}'s actuator {self._actuator} is stopped."
                 )
-            elif _value > 4:
+            elif _value < 10:
                 _fan_mode = _value - 5
                 if _fan_mode > 0:
                     self._fan_on = True
@@ -871,6 +871,15 @@ class OWNHeatingEvent(OWNEvent):
                     self._fan_on = False
                     self._is_active = False
                     self._human_readable_log = f"Zone {self._zone}'s fan is off."
+            elif _value == 100:
+                self._human_readable_log = (
+                    f"Zone {self._zone}'s proportional valve actuator {self._actuator} is off (0 v)"
+                )
+            elif _value <= 200:
+                self._human_readable_log = (
+                    f"Zone {self._zone}'s proportional valve actuator {self._actuator} is at {_value - 100}% ({(_value - 100)/10} v)"
+                )
+
 
         elif self._dimension == 22: #AC Unit setting as captured from MyHome Screen 10
             self._mode_name = CLIMATE_MODE_NUM_TO_NAME[self._dimension_value[0]].lower()
